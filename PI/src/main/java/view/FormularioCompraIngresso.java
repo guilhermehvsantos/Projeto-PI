@@ -1,16 +1,23 @@
 package view;
 
+import Model.Beans.Compra;
 import Model.Beans.Evento;
+import Model.DAO.CompraDAO;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.sql.SQLException;
+import java.time.LocalDateTime;
 
 public class FormularioCompraIngresso extends JDialog {
 
-    public FormularioCompraIngresso(JFrame parentFrame, Evento evento) {
+    private final String nomeComprador; // Nome do usuário logado
+
+    public FormularioCompraIngresso(JFrame parentFrame, Evento evento, String nomeComprador) {
         super(parentFrame, "Compra de Ingressos", true);
+        this.nomeComprador = nomeComprador; // Atribui o nome do comprador
 
         JPanel panel = new JPanel(new GridLayout(0, 2, 10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -41,10 +48,43 @@ public class FormularioCompraIngresso extends JDialog {
         botaoComprar.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // Implemente a lógica de compra aqui
-                JOptionPane.showMessageDialog(FormularioCompraIngresso.this,
-                        "Compra realizada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-                dispose();
+                int eventoId = evento.getId();
+                boolean meiaEntrada = checkBoxMeia.isSelected();
+                int quantidade = Integer.parseInt(textQuantidade.getText());
+                double valorIngresso = Double.parseDouble(textValorIngresso.getText());
+                String formaPagamento = comboBoxFormasPagamento.getSelectedItem().toString();
+                LocalDateTime dataHoraCompra = LocalDateTime.now();
+
+                // Calcular o valor do ingresso
+                double valorUnitario = valorIngresso;
+                if (meiaEntrada) {
+                    valorUnitario /= 2; // Se for meia entrada, divide o valor pela metade
+                }
+
+                // Calcular o total do ingresso
+                double totalIngresso = valorUnitario * quantidade;
+
+                // Mostrar janela de confirmação
+                int confirmacao = JOptionPane.showConfirmDialog(FormularioCompraIngresso.this,
+                        "O total da compra é: " + totalIngresso + ".\nDeseja confirmar a compra?",
+                        "Confirmação de Compra", JOptionPane.YES_NO_OPTION);
+                if (confirmacao == JOptionPane.YES_OPTION) {
+                    // Criar o objeto Compra com os dados do formulário
+                    Compra compra = new Compra(eventoId, meiaEntrada, quantidade, valorIngresso, totalIngresso, formaPagamento, nomeComprador, dataHoraCompra);
+
+                    try {
+                        // Chamar o método registrarCompra do CompraDAO
+                        CompraDAO compraDAO = new CompraDAO();
+                        compraDAO.registrarCompra(compra);
+                        JOptionPane.showMessageDialog(FormularioCompraIngresso.this,
+                                "Compra realizada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+                        dispose();
+                    } catch (SQLException ex) {
+                        ex.printStackTrace();
+                        JOptionPane.showMessageDialog(FormularioCompraIngresso.this,
+                                "Erro ao realizar compra: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
             }
         });
 

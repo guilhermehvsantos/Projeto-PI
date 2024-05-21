@@ -9,9 +9,12 @@ Model\Beans\Usuario.class
 view\FormularioEvento$1.class
 view\MainFrame.class
 Controller\BancoDeDados.class
+Model\Beans\Compra.class
 Model\Beans\Evento.class
 view\FormularioCompraIngresso$1.class
 view\FormularioCompraIngresso.class
 view\Login.class
+view\Perfil.class
 projetopi\pi\PI.class
 Model\DAO\EventoDAO.class
+Model\DAO\CompraDAO.class

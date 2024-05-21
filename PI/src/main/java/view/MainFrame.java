@@ -1,6 +1,7 @@
 package view;
 
 import Controller.BancoDeDados;
+import Controller.BancoDeDados;
 import Model.Beans.Evento;
 import Model.Beans.Usuario;
 
@@ -12,7 +13,8 @@ import java.util.ArrayList;
 public class MainFrame extends JFrame {
 
     private Usuario usuarioLogado;
-    private JTextArea infoText; // Declaração global
+    private JTextArea infoText;
+    private JPanel eventsPanel;
 
     public void setUsuarioLogado(Usuario usuario) {
         this.usuarioLogado = usuario;
@@ -68,6 +70,9 @@ public class MainFrame extends JFrame {
                                 ex.printStackTrace();
                             }
                             break;
+                        case "Profile":
+                            exibirPerfil(usuarioLogado);
+                            break;
                     }
                 }
             }
@@ -77,19 +82,18 @@ public class MainFrame extends JFrame {
         splitPane.setBottomComponent(menuPanel);
 
         JPanel mainContentPanel = new JPanel(new BorderLayout());
-        JPanel eventsPanel = new JPanel();
+        eventsPanel = new JPanel();
         eventsPanel.setLayout(new BoxLayout(eventsPanel, BoxLayout.Y_AXIS));
-        addEventPanels(eventsPanel);
+        atualizarEventos(); // Chama o método atualizarEventos() aqui
 
         JScrollPane eventsScrollPane = new JScrollPane(eventsPanel);
         mainContentPanel.add(eventsScrollPane, BorderLayout.CENTER);
 
         JPanel sidePanel = new JPanel(new GridLayout(3, 1));
 
-        infoText = new JTextArea(); // Inicialização global
+        infoText = new JTextArea();
         infoText.setEditable(false);
-        // Aumentar o tamanho da fonte
-        infoText.setFont(new Font("Serif", Font.BOLD, 20)); // Ajuste o tamanho aqui
+        infoText.setFont(new Font("Serif", Font.BOLD, 20));
         sidePanel.add(new JScrollPane(infoText));
 
         JPanel mapPanel = new ImagePanel("src/main/java/Assets/mapa.jpg");
@@ -107,7 +111,8 @@ public class MainFrame extends JFrame {
         setVisible(true);
     }
 
-    private void addEventPanels(JPanel eventsPanel) throws SQLException {
+    void atualizarEventos() throws SQLException {
+        eventsPanel.removeAll();
         ArrayList<Evento> eventos = BancoDeDados.recuperarEventos();
         for (Evento evento : eventos) {
             JPanel eventPanel = new JPanel(new BorderLayout());
@@ -117,10 +122,14 @@ public class MainFrame extends JFrame {
             JLabel dateTimeLabel = new JLabel("Data e Hora: " + evento.getDataHora());
             JLabel locationLabel = new JLabel("Localização: " + evento.getLocalizacao());
 
-            JPanel infoPanel = new JPanel(new GridLayout(3, 1));
+            Usuario organizador = BancoDeDados.recuperarUsuario(evento.getIdOrganizador());
+            JLabel organizerLabel = new JLabel("Organizador: " + organizador.getNome());
+
+            JPanel infoPanel = new JPanel(new GridLayout(4, 1));
             infoPanel.add(titleLabel);
             infoPanel.add(dateTimeLabel);
             infoPanel.add(locationLabel);
+            infoPanel.add(organizerLabel);
 
             eventPanel.add(infoPanel, BorderLayout.CENTER);
 
@@ -135,14 +144,15 @@ public class MainFrame extends JFrame {
                         + "Localização: " + evento.getLocalizacao() + "\n"
                         + "Descrição: " + evento.getDescricao() + "\n"
                         + "Capacidade: " + evento.getCapacidade() + "\n"
-                        + "Valor Ingressos: " + evento.getValorIngressos()
+                        + "Valor Ingressos: " + evento.getValorIngressos() + "\n"
+                        + "Organizador: " + organizador.getNome()
                 );
             });
             buttonPanel.add(detailsButton);
 
             JButton buyTicketButton = new JButton("Comprar Ingresso");
             buyTicketButton.addActionListener(e -> {
-                FormularioCompraIngresso compraIngresso = new FormularioCompraIngresso(MainFrame.this, evento);
+                FormularioCompraIngresso compraIngresso = new FormularioCompraIngresso(MainFrame.this, evento, usuarioLogado.getNome());
                 compraIngresso.setVisible(true);
             });
             buttonPanel.add(buyTicketButton);
@@ -151,6 +161,8 @@ public class MainFrame extends JFrame {
 
             eventsPanel.add(eventPanel);
         }
+        eventsPanel.revalidate();
+        eventsPanel.repaint();
     }
 
     private void realizarLogout() {
@@ -168,21 +180,17 @@ public class MainFrame extends JFrame {
 
     private void verificarEExibirFormularioEvento(int idOrganizador) throws SQLException {
         if (usuarioLogado.isOrganizador()) {
-            FormularioEvento formularioEvento = new FormularioEvento(idOrganizador);
+            FormularioEvento formularioEvento = new FormularioEvento(idOrganizador, this);
             formularioEvento.setLocationRelativeTo(null);
             formularioEvento.setVisible(true);
         } else {
             JOptionPane.showMessageDialog(this, "Apenas organizadores podem cadastrar eventos.", "Acesso Negado", JOptionPane.WARNING_MESSAGE);
         }
     }
+    
+    private void exibirPerfil(Usuario usuario) {
+    Perfil janelaPerfil = new Perfil(usuarioLogado);
+    janelaPerfil.setVisible(true);
+}
 
-    public static void main(String[] args) throws SQLException {
-        SwingUtilities.invokeLater(() -> {
-            try {
-                new MainFrame(1); // Substitua 1 pelo ID do usuário real
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        });
-    }
 }
