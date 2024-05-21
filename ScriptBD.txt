@@ -1,5 +1,7 @@
 CREATE DATABASE senac;
 
+SELECT * FROM senac.usuarios;
+
 CREATE TABLE senac.usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     Nome VARCHAR(100) NOT NULL,
@@ -26,6 +28,25 @@ CREATE TABLE senac.Login (
     PRIMARY KEY (UserID)
 );
 
-SELECT * FROM senac.usuarios;
-SELECT * FROM senac.eventos;
+CREATE TABLE senac.compras (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    evento_id INT NOT NULL,
+    meia_entrada BOOLEAN NOT NULL,
+    quantidade INT NOT NULL,
+    valor_ingresso DOUBLE NOT NULL,
+    total_ingresso DOUBLE NOT NULL,
+    forma_pagamento VARCHAR(50) NOT NULL,
+    nome_comprador VARCHAR(255) NOT NULL,
+    data_hora_compra TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (evento_id) REFERENCES senac.eventos(id)
+);
+
+
 SELECT * FROM senac.Login;
+SELECT * FROM senac.eventos;
+SELECT * FROM senac.compras;
+
+DROP TABLE senac.Login;
+DROP TABLE senac.compras;
+DROP TABLE senac.
+
