@@ -1,15 +1,18 @@
 package view;
 
 import Controller.BancoDeDados;
+import Model.Beans.Evento;
 import Model.Beans.Usuario;
 
 import javax.swing.*;
 import java.awt.*;
 import java.sql.SQLException;
+import java.util.ArrayList;
 
 public class MainFrame extends JFrame {
 
     private Usuario usuarioLogado;
+    private JTextArea infoText; // Declaração global
 
     public void setUsuarioLogado(Usuario usuario) {
         this.usuarioLogado = usuario;
@@ -19,37 +22,32 @@ public class MainFrame extends JFrame {
         this.usuarioLogado = null;
     }
 
-    public MainFrame(int userID, Usuario usuarioLogado) throws SQLException {
-        this.usuarioLogado = usuarioLogado; // Atribui o usuário logado ao campo usuarioLogado
+    public MainFrame(int userID) throws SQLException {
+        this.usuarioLogado = BancoDeDados.recuperarUsuario(userID);
 
         setTitle("Aplicativo de Eventos");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
-        // Menu lateral e seção de perfil do usuário
         JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
-        splitPane.setResizeWeight(1.0 / 3.0); // Define a proporção para 1/3
-        splitPane.setPreferredSize(new Dimension(220, getHeight())); // Define a largura mínima
+        splitPane.setResizeWeight(1.0 / 3.0);
+        splitPane.setPreferredSize(new Dimension(220, getHeight()));
 
-        // Seção de Perfil do Usuário
         JPanel profilePanel = new JPanel(new BorderLayout());
         profilePanel.setBackground(Color.LIGHT_GRAY);
 
-        // Círculo de perfil (imagem do usuário)
-        ImageIcon profileImageIcon = new ImageIcon("Cod\\src\\Assets\\Perfil.png");
+        ImageIcon profileImageIcon = new ImageIcon("src/main/java/Assets/Perfil.png");
         Image profileImage = profileImageIcon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH);
         JLabel profileImageLabel = new JLabel(new ImageIcon(profileImage));
         profileImageLabel.setHorizontalAlignment(SwingConstants.CENTER);
         profileImageLabel.setVerticalAlignment(SwingConstants.CENTER);
         profilePanel.add(profileImageLabel, BorderLayout.CENTER);
 
-        // Nome do usuário
         JLabel usernameLabel = new JLabel(usuarioLogado.getNome());
         usernameLabel.setHorizontalAlignment(SwingConstants.CENTER);
         profilePanel.add(usernameLabel, BorderLayout.SOUTH);
 
-        // Menu
-        String[] menuItems = {"Profile", "Eventos", "Preferências", "Meus Ingressos", "Logout"};
+        String[] menuItems = {"Profile", "Cadastrar Eventos", "Preferências", "Meus Ingressos", "Logout"};
         JList<String> menuList = new JList<>(menuItems);
         JScrollPane menuScrollPane = new JScrollPane(menuList);
         JPanel menuPanel = new JPanel(new BorderLayout());
@@ -58,74 +56,109 @@ public class MainFrame extends JFrame {
         menuList.addListSelectionListener(e -> {
             if (e.getValueIsAdjusting()) {
                 String selectedMenuItem = menuList.getSelectedValue();
-                if (selectedMenuItem != null && selectedMenuItem.equals("Logout")) {
-                    realizarLogout();
+                if (selectedMenuItem != null) {
+                    switch (selectedMenuItem) {
+                        case "Logout":
+                            realizarLogout();
+                            break;
+                        case "Cadastrar Eventos":
+                            try {
+                                verificarEExibirFormularioEvento(userID);
+                            } catch (SQLException ex) {
+                                ex.printStackTrace();
+                            }
+                            break;
+                    }
                 }
             }
         });
 
-        // Adicionando os componentes ao JSplitPane
         splitPane.setTopComponent(profilePanel);
         splitPane.setBottomComponent(menuPanel);
 
-        // Conteúdo principal (duas colunas do meio)
-        JPanel contentPanel = new JPanel(new BorderLayout());
+        JPanel mainContentPanel = new JPanel(new BorderLayout());
+        JPanel eventsPanel = new JPanel();
+        eventsPanel.setLayout(new BoxLayout(eventsPanel, BoxLayout.Y_AXIS));
+        addEventPanels(eventsPanel);
 
-        // Barra de pesquisa no topo
-        JPanel searchPanel = new JPanel(new BorderLayout());
-        JTextField searchField = new JTextField(20);
-        JButton searchButton = new JButton("Pesquisar");
-        searchPanel.add(searchField, BorderLayout.CENTER);
-        searchPanel.add(searchButton, BorderLayout.EAST);
+        JScrollPane eventsScrollPane = new JScrollPane(eventsPanel);
+        mainContentPanel.add(eventsScrollPane, BorderLayout.CENTER);
 
-        // Adicionando a barra de pesquisa no topo do painel de conteúdo
-        contentPanel.add(searchPanel, BorderLayout.NORTH);
-
-        // Conteúdo da pesquisa
-        JTextArea searchResults = new JTextArea();
-        searchResults.setEditable(false);
-        JScrollPane scrollPane = new JScrollPane(searchResults);
-
-        // Adicionando o conteúdo da pesquisa abaixo da barra de pesquisa
-        contentPanel.add(scrollPane, BorderLayout.CENTER);
-
-        // Coluna lateral (última coluna)
         JPanel sidePanel = new JPanel(new GridLayout(3, 1));
 
-        // Seção de texto
-        JTextArea infoText = new JTextArea();
-        infoText.setText("TEXTOOO");
+        infoText = new JTextArea(); // Inicialização global
         infoText.setEditable(false);
+        // Aumentar o tamanho da fonte
+        infoText.setFont(new Font("Serif", Font.BOLD, 20)); // Ajuste o tamanho aqui
         sidePanel.add(new JScrollPane(infoText));
 
-        // Painel para a imagem do mapa
-        JPanel mapPanel = new ImagePanel("Cod\\src\\Assets\\mapa.jpg");
+        JPanel mapPanel = new ImagePanel("src/main/java/Assets/mapa.jpg");
         mapPanel.add(new JLabel("Localização"));
         sidePanel.add(mapPanel);
 
-        // Calendário
         JCalendar calendar = new JCalendar();
         sidePanel.add(calendar);
 
-        // Adicionando os painéis ao frame
         add(splitPane, BorderLayout.WEST);
-        add(contentPanel, BorderLayout.CENTER);
+        add(mainContentPanel, BorderLayout.CENTER);
         add(sidePanel, BorderLayout.EAST);
 
-        // Configuração do tamanho e visibilidade
         setSize(1200, 1000);
         setVisible(true);
+    }
+
+    private void addEventPanels(JPanel eventsPanel) throws SQLException {
+        ArrayList<Evento> eventos = BancoDeDados.recuperarEventos();
+        for (Evento evento : eventos) {
+            JPanel eventPanel = new JPanel(new BorderLayout());
+            eventPanel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+
+            JLabel titleLabel = new JLabel("Título: " + evento.getTitulo());
+            JLabel dateTimeLabel = new JLabel("Data e Hora: " + evento.getDataHora());
+            JLabel locationLabel = new JLabel("Localização: " + evento.getLocalizacao());
+
+            JPanel infoPanel = new JPanel(new GridLayout(3, 1));
+            infoPanel.add(titleLabel);
+            infoPanel.add(dateTimeLabel);
+            infoPanel.add(locationLabel);
+
+            eventPanel.add(infoPanel, BorderLayout.CENTER);
+
+            JPanel buttonPanel = new JPanel(new FlowLayout());
+
+            JButton detailsButton = new JButton("Ver Detalhes");
+            detailsButton.addActionListener(e -> {
+                infoText.setText(
+                        "Detalhes do Evento:\n"
+                        + "Título: " + evento.getTitulo() + "\n"
+                        + "Data e Hora: " + evento.getDataHora() + "\n"
+                        + "Localização: " + evento.getLocalizacao() + "\n"
+                        + "Descrição: " + evento.getDescricao() + "\n"
+                        + "Capacidade: " + evento.getCapacidade() + "\n"
+                        + "Valor Ingressos: " + evento.getValorIngressos()
+                );
+            });
+            buttonPanel.add(detailsButton);
+
+            JButton buyTicketButton = new JButton("Comprar Ingresso");
+            buyTicketButton.addActionListener(e -> {
+                FormularioCompraIngresso compraIngresso = new FormularioCompraIngresso(MainFrame.this, evento);
+                compraIngresso.setVisible(true);
+            });
+            buttonPanel.add(buyTicketButton);
+
+            eventPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+            eventsPanel.add(eventPanel);
+        }
     }
 
     private void realizarLogout() {
         int confirmacao = JOptionPane.showConfirmDialog(this, "Deseja realmente fazer logout?", "Logout", JOptionPane.YES_NO_OPTION);
         if (confirmacao == JOptionPane.YES_OPTION) {
             try {
-                // Remova o usuário logado da tabela Login
                 BancoDeDados.removerUsuarioLogado();
-                // Feche o MainFrame
                 dispose();
-                // Abra a tela de escolha (Cadastro de Usuário ou Login)
                 BancoDeDados.main(new String[]{});
             } catch (SQLException ex) {
                 ex.printStackTrace();
@@ -133,4 +166,23 @@ public class MainFrame extends JFrame {
         }
     }
 
+    private void verificarEExibirFormularioEvento(int idOrganizador) throws SQLException {
+        if (usuarioLogado.isOrganizador()) {
+            FormularioEvento formularioEvento = new FormularioEvento(idOrganizador);
+            formularioEvento.setLocationRelativeTo(null);
+            formularioEvento.setVisible(true);
+        } else {
+            JOptionPane.showMessageDialog(this, "Apenas organizadores podem cadastrar eventos.", "Acesso Negado", JOptionPane.WARNING_MESSAGE);
+        }
+    }
+
+    public static void main(String[] args) throws SQLException {
+        SwingUtilities.invokeLater(() -> {
+            try {
+                new MainFrame(1); // Substitua 1 pelo ID do usuário real
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        });
+    }
 }

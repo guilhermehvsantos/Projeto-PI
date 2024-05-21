@@ -1,5 +1,4 @@
 Controller\ConexaoMySQL.class
-Controller\EventoDAO.class
 view\Formulario.class
 view\Formulario$1.class
 view\JCalendar.class
@@ -11,5 +10,8 @@ view\FormularioEvento$1.class
 view\MainFrame.class
 Controller\BancoDeDados.class
 Model\Beans\Evento.class
+view\FormularioCompraIngresso$1.class
+view\FormularioCompraIngresso.class
 view\Login.class
 projetopi\pi\PI.class
+Model\DAO\EventoDAO.class

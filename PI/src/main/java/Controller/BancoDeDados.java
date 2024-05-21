@@ -1,5 +1,6 @@
 package Controller;
 
+import Model.Beans.Evento;
 import Model.Beans.Usuario;
 import view.Formulario;
 import view.Login;
@@ -10,6 +11,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 
 public class BancoDeDados {
 
@@ -20,7 +22,7 @@ public class BancoDeDados {
     public static void main(String[] args) {
         try {
             String operacao[] = {"Cadastro de Usuário", "Login"};
-            Object escolha = JOptionPane.showInputDialog(null, "O que deseja realizar?", "", JOptionPane.QUESTION_MESSAGE, null, operacao, operacao[0]);
+            Object escolha = JOptionPane.showInputDialog(null, "O que deseja realizar?", "EventMaster", JOptionPane.QUESTION_MESSAGE, null, operacao, operacao[0]);
             realizaOperacao(escolha);
         } catch (Exception e) {
             e.printStackTrace();
@@ -143,17 +145,18 @@ public class BancoDeDados {
         }
     }
 
-    public static Usuario recuperarUsuario(String email) throws SQLException {
+    public static Usuario recuperarUsuario(int userID) throws SQLException {
         Usuario usuario = null;
+        ResultSet rs = null;
         try {
             cn = conexao.openDB();
-            ps = cn.prepareStatement(
-                    "SELECT * FROM senac.usuarios WHERE Email = ?");
-            ps.setString(1, email);
-            ResultSet rs = ps.executeQuery();
+            ps = cn.prepareStatement("SELECT * FROM senac.usuarios WHERE id = ?");
+            ps.setInt(1, userID);
+            rs = ps.executeQuery();
             if (rs.next()) {
                 // Extrair informações do ResultSet e criar um objeto Usuario
                 String nome = rs.getString("Nome");
+                String email = rs.getString("Email");
                 String senha = rs.getString("Senha");
                 String telefone = rs.getString("Telefone");
                 boolean organizador = rs.getBoolean("Organizador");
@@ -162,6 +165,9 @@ public class BancoDeDados {
                 usuario = new Usuario(nome, senha, email, telefone, organizador);
             }
         } finally {
+            if (rs != null) {
+                rs.close();
+            }
             if (ps != null) {
                 ps.close();
             }
@@ -170,6 +176,47 @@ public class BancoDeDados {
             }
         }
         return usuario;
+    }
+    
+    public static ArrayList<Evento> recuperarEventos() throws SQLException {
+        ArrayList<Evento> eventos = new ArrayList<>();
+
+        Connection cn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+
+        try {
+            cn = conexao.openDB();
+            ps = cn.prepareStatement("SELECT * FROM senac.eventos");
+            rs = ps.executeQuery();
+
+            while (rs.next()) {
+                int id = rs.getInt("id");
+                String titulo = rs.getString("titulo");
+                String dataHora = rs.getString("data_hora");
+                String localizacao = rs.getString("localizacao");
+                String descricao = rs.getString("descricao");
+                int capacidade = rs.getInt("capacidade");
+                double valorIngressos = rs.getDouble("valor_ingressos");
+                int idOrganizador = rs.getInt("id_organizador");
+
+                // Criar um objeto Evento e adicioná-lo à lista de eventos
+                Evento evento = new Evento(id, titulo, dataHora, localizacao, descricao, capacidade, valorIngressos, idOrganizador);
+                eventos.add(evento);
+            }
+        } finally {
+            if (rs != null) {
+                rs.close();
+            }
+            if (ps != null) {
+                ps.close();
+            }
+            if (cn != null) {
+                cn.close();
+            }
+        }
+
+        return eventos;
     }
 
 }

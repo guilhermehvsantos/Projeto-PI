@@ -1,40 +1,42 @@
 package view;
 
 import Model.Beans.Evento;
-import Controller.EventoDAO;
+import Model.DAO.EventoDAO;
 
 import javax.swing.*;
-import javax.swing.text.MaskFormatter;
+import javax.swing.text.MaskFormatter; // Importar a classe MaskFormatter
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.text.ParseException;
+import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class FormularioEvento extends JFrame {
     private JTextField textFieldTitulo;
-    private JFormattedTextField formattedTextFieldDataHora;
+    private JFormattedTextField formattedTextFieldDataHora; // Alterado para JFormattedTextField
     private JTextField textFieldLocalizacao;
     private JTextArea textAreaDescricao;
     private JTextField textFieldCapacidade;
-    private JTextField textFieldIngressos;
-    private int idOrganizador;
+    private JTextField textFieldValorIngresso;
+    private int userID; // Alterando o nome do atributo para userID
 
-    public FormularioEvento(int idOrganizador) {
-        this.idOrganizador = idOrganizador;
+    public FormularioEvento(int userID) {
+        this.userID = userID;
 
         setTitle("Formulário de Evento");
         setSize(270, 500);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setResizable(false);
 
         JLabel labelTitulo = new JLabel("Título do Evento:");
         textFieldTitulo = new JTextField(20);
         JLabel labelDataHora = new JLabel("Data e Hora (yyyy-MM-dd HH:mm):");
         try {
-            MaskFormatter formatter = new MaskFormatter("####-##-## ##:##");
-            formattedTextFieldDataHora = new JFormattedTextField(formatter);
+            MaskFormatter formatter = new MaskFormatter("####-##-## ##:##"); // Definir a máscara
+            formattedTextFieldDataHora = new JFormattedTextField(formatter); // Usar JFormattedTextField
             formattedTextFieldDataHora.setColumns(20);
-        } catch (ParseException ex) {
+        } catch (java.text.ParseException ex) {
             ex.printStackTrace();
         }
         JLabel labelLocalizacao = new JLabel("Localização:");
@@ -44,10 +46,9 @@ public class FormularioEvento extends JFrame {
         textAreaDescricao.setLineWrap(true);
         JScrollPane scrollPane = new JScrollPane(textAreaDescricao);
         JLabel labelCapacidade = new JLabel("Capacidade:");
-        textFieldCapacidade = new JTextField(20);
-        JLabel labelIngressos = new JLabel("Ingressos:");
-        textFieldIngressos = new JTextField(20);
-        JLabel labelVazio = new JLabel("      ");
+        textFieldCapacidade = new JTextField(15);
+        JLabel labelValorIngresso = new JLabel("Valor do Ingresso:");
+        textFieldValorIngresso = new JTextField(15);
         JButton button = new JButton("Enviar");
 
         setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));
@@ -55,62 +56,59 @@ public class FormularioEvento extends JFrame {
         add(labelTitulo);
         add(textFieldTitulo);
         add(labelDataHora);
-        add(formattedTextFieldDataHora);
+        add(formattedTextFieldDataHora); // Adicionar o JFormattedTextField
         add(labelLocalizacao);
         add(textFieldLocalizacao);
         add(labelDescricao);
         add(scrollPane);
         add(labelCapacidade);
         add(textFieldCapacidade);
-        add(labelIngressos);
-        add(labelVazio);
+        add(labelValorIngresso);
+        add(textFieldValorIngresso);
         add(button);
 
         button.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                enviarFormulario();
+                try {
+                    enviarFormulario();
+                } catch (SQLException ex) {
+                    Logger.getLogger(FormularioEvento.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         });
     }
 
-    private void enviarFormulario() {
+    private void enviarFormulario() throws SQLException {
         if (textFieldTitulo.getText().isEmpty() || formattedTextFieldDataHora.getText().isEmpty()
                 || textFieldLocalizacao.getText().isEmpty() || textAreaDescricao.getText().isEmpty()
-                || textFieldCapacidade.getText().isEmpty() || textFieldIngressos.getText().isEmpty()) {
+                || textFieldCapacidade.getText().isEmpty() || textFieldValorIngresso.getText().isEmpty()) {
             JOptionPane.showMessageDialog(this, "Por favor, preencha todos os campos.", "Erro",
                     JOptionPane.ERROR_MESSAGE);
         } else {
-            Evento evento = new Evento();
-            evento.setTitulo(textFieldTitulo.getText());
-            evento.setDataHora(formattedTextFieldDataHora.getText());
-            evento.setLocalizacao(textFieldLocalizacao.getText());
-            evento.setDescricao(textAreaDescricao.getText());
-            evento.setCapacidade(Integer.parseInt(textFieldCapacidade.getText()));
-            evento.setValorIngressos(Double.parseDouble(textFieldIngressos.getText()));
-            evento.setIdOrganizador(idOrganizador);
-
             try {
+                Evento evento = new Evento();
+                evento.setTitulo(textFieldTitulo.getText());
+                evento.setDataHora(formattedTextFieldDataHora.getText()); // Usar o texto do JFormattedTextField
+                evento.setLocalizacao(textFieldLocalizacao.getText());
+                evento.setDescricao(textAreaDescricao.getText());
+                evento.setCapacidade(Integer.parseInt(textFieldCapacidade.getText()));
+                evento.setValorIngressos(Double.parseDouble(textFieldValorIngresso.getText()));
+                evento.setIdOrganizador(userID);
+
                 EventoDAO eventoDAO = new EventoDAO();
                 eventoDAO.cadastrarEvento(evento);
                 JOptionPane.showMessageDialog(this, "Evento cadastrado com sucesso!");
 
                 textFieldTitulo.setText("");
-                formattedTextFieldDataHora.setText("");
+                formattedTextFieldDataHora.setText(""); // Limpar o JFormattedTextField
                 textFieldLocalizacao.setText("");
                 textAreaDescricao.setText("");
                 textFieldCapacidade.setText("");
-                textFieldIngressos.setText("");
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Erro ao cadastrar: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+                textFieldValorIngresso.setText("");
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Por favor, insira um valor válido para a capacidade e o valor do ingresso.", "Erro", JOptionPane.ERROR_MESSAGE);
             }
         }
-    }
-
-    public static void main(String[] args) {
-        int idOrganizador = 1; // Exemplo de ID do organizador, isto deve ser passado de acordo com o login
-        FormularioEvento frame = new FormularioEvento(idOrganizador);
-        frame.setLocationRelativeTo(null);
-        frame.setVisible(true);
     }
 }

@@ -3,8 +3,6 @@ package view;
 import Controller.BancoDeDados;
 import static Controller.BancoDeDados.recuperarUsuario;
 import Model.Beans.Usuario;
-import view.MainFrame;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -52,48 +50,49 @@ public class Login extends JFrame {
         });
     }
 
-    private void verificarLogin() {
-        String email = textFieldEmail.getText();
-        String senha = new String(textFieldSenha.getPassword());
+   private void verificarLogin() {
+    String email = textFieldEmail.getText();
+    String senha = new String(textFieldSenha.getPassword());
 
-        if (email.isEmpty() || senha.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Por favor, preencha todos os campos.", "Erro",
-                    JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        try {
-            int userID = BancoDeDados.verificarLogin(email, senha);
-            if (userID != -1) {
-                // Recupera o usuário do banco de dados
-                Usuario usuario = BancoDeDados.recuperarUsuario(email);
-
-                JOptionPane.showMessageDialog(this, "Login efetuado com sucesso!");
-                dispose(); // Fecha a janela de login
-                // Abre o MainFrame
-                SwingUtilities.invokeLater(() -> {
-                    try {
-                        MainFrame mainFrame = new MainFrame(userID, usuario);
-                        mainFrame.setVisible(true);
-                    } catch (SQLException ex) {
-                        Logger.getLogger(Login.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                });
-            } else {
-                JOptionPane.showMessageDialog(this, "Usuário não encontrado ou senha incorreta.", "Erro",
-                        JOptionPane.ERROR_MESSAGE);
-
-                // Volta para a tela de escolha
-                dispose(); // Fecha a janela de login
-                // Abre a tela de escolha
-                SwingUtilities.invokeLater(() -> {
-                    BancoDeDados.main(new String[]{});
-                });
-            }
-        } catch (SQLException ex) {
-            LOGGER.log(Level.SEVERE, "Erro ao verificar login", ex);
-            JOptionPane.showMessageDialog(this, "Erro ao verificar login: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
-        }
+    if (email.isEmpty() || senha.isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Por favor, preencha todos os campos.", "Erro",
+                JOptionPane.ERROR_MESSAGE);
+        return;
     }
+
+    try {
+        int userID = BancoDeDados.verificarLogin(email, senha);
+        if (userID != -1) {
+            // Recupera o usuário do banco de dados usando o ID
+            Usuario usuario = BancoDeDados.recuperarUsuario(userID);
+
+            JOptionPane.showMessageDialog(this, "Login efetuado com sucesso!");
+            dispose(); // Fecha a janela de login
+            // Abre o MainFrame
+            SwingUtilities.invokeLater(() -> {
+                try {
+                    MainFrame mainFrame = new MainFrame(userID);
+                    mainFrame.setVisible(true);
+                } catch (SQLException ex) {
+                    LOGGER.log(Level.SEVERE, null, ex);
+                }
+            });
+        } else {
+            JOptionPane.showMessageDialog(this, "Usuário não encontrado ou senha incorreta.", "Erro",
+                    JOptionPane.ERROR_MESSAGE);
+
+            // Volta para a tela de escolha
+            dispose(); // Fecha a janela de login
+            // Abre a tela de escolha
+            SwingUtilities.invokeLater(() -> {
+                BancoDeDados.main(new String[]{});
+            });
+        }
+    } catch (SQLException ex) {
+        LOGGER.log(Level.SEVERE, "Erro ao verificar login", ex);
+        JOptionPane.showMessageDialog(this, "Erro ao verificar login: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+    }
+}
+
 
 }
